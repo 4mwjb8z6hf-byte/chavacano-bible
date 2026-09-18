@@ -1,17 +1,1 @@
-{
-  "name": "Chavacano Bible",
-  "short_name": "Chavacano Bible",
-  "start_url": "./",
-  "display": "standalone",
-  "background_color": "#f4f7fa",
-  "theme_color": "#0b3558",
-  "description": "Chavacano New Testament reading and study app",
-  "icons": [
-    {
-      "src": "icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ]
-}
+{"name":"Chavacano Bible","short_name":"Chavacano Bible","start_url":"./","display":"standalone","background_color":"#f4f7fa","theme_color":"#0b3558","icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]}
