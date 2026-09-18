@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b3558">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Chavacano Bible</title>
+<style>
+:root{--bg:#f4f7fa;--surface:#fff;--ink:#17212b;--muted:#687582;--brand:#0b3558;--brand2:#174f7d;--line:#dfe6ec;--soft:#e8f0f6}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+body.dark{--bg:#10161c;--surface:#18212a;--ink:#eef4f8;--muted:#aab7c2;--brand:#8dc7f5;--brand2:#5da9dc;--line:#2d3943;--soft:#23313d}
+header{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(18px);border-bottom:1px solid var(--line);padding:12px 16px env(safe-area-inset-top)}
+.header-row{max-width:1050px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{font-weight:850;font-size:20px}.tag{font-size:12px;color:var(--muted)}
+main{max-width:1050px;margin:auto;padding:18px 16px 100px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:14px;box-shadow:0 4px 20px #00000009}
+.controls{display:grid;grid-template-columns:1.3fr .7fr auto;gap:9px}select,input,button{font:inherit;border:1px solid var(--line);border-radius:13px;background:var(--surface);color:var(--ink);padding:11px 12px}button{cursor:pointer}.primary{background:var(--brand);color:#fff;border-color:var(--brand)}.iconbtn{width:44px;padding:10px}
+h1{font-size:28px;line-height:1.1;margin:0 0 8px}.muted{color:var(--muted)}.small{font-size:13px;line-height:1.5}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.actions button{font-size:14px}
+.reader{height:64vh;min-height:520px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff}.reader iframe{width:100%;height:100%;border:0;background:#fff}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.saved-item{padding:12px;border:1px solid var(--line);border-radius:14px;margin-top:9px}.saved-ref{font-weight:800;color:var(--brand)}textarea{width:100%;min-height:100px;resize:vertical}
+nav{position:fixed;z-index:20;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--surface) 95%,transparent);backdrop-filter:blur(18px);border-top:1px solid var(--line);padding:8px max(10px,env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom));display:flex;justify-content:center;gap:6px}
+nav button{border:0;background:transparent;min-width:72px;padding:8px 10px;font-size:12px}.active{color:var(--brand);font-weight:800}
+@media(min-width:760px){main{padding-top:26px}.grid{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<header><div class="header-row"><div><div class="brand">📖 Chavacano Bible</div><div class="tag">Zamboangueño • New Testament • iPad optimized</div></div><button id="theme" class="iconbtn" aria-label="Theme">◐</button></div></header>
+<main id="app"></main>
+<nav>
+<button id="read" class="active">📖<br>Read</button>
+<button id="saved">🔖<br>Saved</button>
+<button id="notes">📝<br>Notes</button>
+<button id="about">ℹ️<br>About</button>
+</nav>
+<script>
+const BOOKS=[
+["Mateo","MAT",28],["Marcos","MRK",16],["Lucas","LUK",24],["Juan","JHN",21],["Maga Apostoles","ACT",28],
+["Roma","ROM",16],["1 Corinto","1CO",16],["2 Corinto","2CO",13],["Galacia","GAL",6],["Efeso","EPH",6],
+["Filipos","PHP",4],["Colosas","COL",4],["1 Tesalonica","1TH",5],["2 Tesalonica","2TH",3],["1 Timoteo","1TI",6],
+["2 Timoteo","2TI",4],["Tito","TIT",3],["Filemon","PHM",1],["Hebreo","HEB",13],["Santiago","JAS",5],
+["1 Pedro","1PE",5],["2 Pedro","2PE",3],["1 Juan","1JN",5],["2 Juan","2JN",1],["3 Juan","3JN",1],
+["Judas","JUD",1],["El Revelacion","REV",22]
+];
+let state=JSON.parse(localStorage.getItem("cbkState")||'{"book":"1 Corinto","chapter":13,"tab":"read"}');
+function persist(){localStorage.setItem("cbkState",JSON.stringify(state))}
+function url(){let b=BOOKS.find(x=>x[0]===state.book);return `https://ebible.org/cbk/${b[1]}${String(state.chapter).padStart(2,"0")}.htm`}
+function render(){
+const app=document.querySelector("#app");
+if(state.tab==="saved"){let s=JSON.parse(localStorage.getItem("cbkSaved")||"[]");app.innerHTML=`<section class="panel"><h1>Saved passages</h1><p class="small muted">Save references here while studying. Scripture remains on the licensed source page.</p>${s.length?s.map((x,i)=>`<div class="saved-item"><div class="saved-ref">${x.ref}</div><div class="small">${x.note||"Saved passage"}</div><div class="actions"><button onclick="openRef(${i})">Open</button><button onclick="delSave(${i})">Remove</button></div></div>`).join(""):'<p class="muted">No saved passages yet.</p>'}</section>`;return}
+if(state.tab==="notes"){app.innerHTML=`<section class="panel"><h1>Study notes</h1><p class="small muted">Your notes are stored only on this device/browser.</p><textarea id="note" placeholder="Write your sermon, Sabbath School, or personal study notes here…">${localStorage.getItem("cbkNote")||""}</textarea><div class="actions"><button class="primary" id="saveNote">Save notes</button><button id="clearNote">Clear</button></div></section>`;saveNote.onclick=()=>{localStorage.setItem("cbkNote",note.value);alert("Notes saved on this device.")};clearNote.onclick=()=>{note.value="";localStorage.removeItem("cbkNote")};return}
+if(state.tab==="about"){app.innerHTML=`<section class="panel"><h1>About this app</h1><p>The app is an independent reading interface for the <b>Chavacano New Testament (cbkNT)</b>, translated by Wycliffe Bible Translators, Inc. and dated 1981.</p><p class="small muted">eBible.org states that the text may be shared and ported to other file formats under its CC BY-NC-ND terms, provided the copyright/source information is retained, the Scripture words and punctuation are not changed, and it is not sold for profit.</p><div class="actions"><a href="https://ebible.org/cbk/" target="_blank"><button class="primary">Open eBible.org</button></a><a href="https://ebible.org/find/details.php?id=cbk" target="_blank"><button>License details</button></a></div></section>`;return}
+let b=BOOKS.find(x=>x[0]===state.book);
+app.innerHTML=`<section class="panel"><div class="controls">
+<select id="book">${BOOKS.map(x=>`<option ${x[0]===state.book?"selected":""}>${x[0]}</option>`).join("")}</select>
+<select id="chapter">${Array.from({length:b[2]},(_,i)=>`<option ${i+1===state.chapter?"selected":""}>${i+1}</option>`).join("")}</select>
+<button class="primary" id="openTab">Open</button></div>
+<div class="actions"><button id="prev">‹ Previous</button><button id="next">Next ›</button><button id="saveRef">🔖 Save reference</button><button id="external">↗ Full page</button></div></section>
+<section class="panel"><h1>${state.book} ${state.chapter}</h1><p class="small muted">Licensed Chavacano text is displayed from eBible.org. Internet is required for the Scripture pane in this version.</p><div class="reader"><iframe src="${url()}" title="${state.book} ${state.chapter}" loading="eager"></iframe></div></section>`;
+book.onchange=()=>{state.book=book.value;state.chapter=1;persist();render()}
+chapter.onchange=()=>{state.chapter=+chapter.value;persist();render()}
+openTab.onclick=()=>window.open(url(),"_blank");external.onclick=openTab.onclick;
+prev.onclick=()=>change(-1);next.onclick=()=>change(1);
+saveRef.onclick=()=>{let s=JSON.parse(localStorage.getItem("cbkSaved")||"[]");let ref=`${state.book} ${state.chapter}`;if(!s.some(x=>x.ref===ref)){s.unshift({ref});localStorage.setItem("cbkSaved",JSON.stringify(s));alert("Reference saved.")}else alert("Already saved.")}
+}
+function change(d){let i=BOOKS.findIndex(x=>x[0]===state.book), b=BOOKS[i];if(state.chapter+d>=1&&state.chapter+d<=b[2])state.chapter+=d;else if(d>0&&i<BOOKS.length-1){state.book=BOOKS[i+1][0];state.chapter=1}else if(d<0&&i>0){state.book=BOOKS[i-1][0];state.chapter=BOOKS[i-1][2]}persist();render()}
+function openRef(i){let s=JSON.parse(localStorage.getItem("cbkSaved")||"[]"),ref=s[i].ref.split(" "),c=+ref.pop();state.book=ref.join(" ");state.chapter=c;state.tab="read";persist();render()}
+function delSave(i){let s=JSON.parse(localStorage.getItem("cbkSaved")||"[]");s.splice(i,1);localStorage.setItem("cbkSaved",JSON.stringify(s));render()}
+read.onclick=()=>{state.tab="read";persist();render()};saved.onclick=()=>{state.tab="saved";render()};notes.onclick=()=>{state.tab="notes";render()};about.onclick=()=>{state.tab="about";render()};
+theme.onclick=()=>{document.body.classList.toggle("dark");localStorage.setItem("cbkDark",document.body.classList.contains("dark"))};
+if(localStorage.getItem("cbkDark")==="true")document.body.classList.add("dark");
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js");
+render();
+</script>
+</body></html>
