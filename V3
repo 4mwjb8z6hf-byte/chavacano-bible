@@ -1,0 +1,99 @@
+name: Build Chavacano Offline Bible
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout app
+        uses: actions/checkout@v7
+
+      - name: Download licensed Chavacano HTML package
+        run: |
+          mkdir -p site/bible
+          curl -L --fail --retry 3 https://ebible.org/Scriptures/cbk_html.zip -o /tmp/cbk_html.zip
+          unzip -q /tmp/cbk_html.zip -d site/bible
+
+      - name: Build chapter manifest
+        run: |
+          python - <<'PY'
+          import json, os, re
+
+          codes = {
+              "MAT","MRK","LUK","JHN","ACT","ROM","1CO","2CO",
+              "GAL","EPH","PHP","COL","1TH","2TH","1TI","2TI",
+              "TIT","PHM","HEB","JAS","1PE","2PE","1JN","2JN",
+              "3JN","JUD","REV"
+          }
+
+          out = {c:{} for c in codes}
+
+          for root, dirs, files in os.walk("site/bible"):
+              for f in files:
+                  m = re.fullmatch(
+                      r"(MAT|MRK|LUK|JHN|ACT|ROM|1CO|2CO|GAL|EPH|PHP|COL|1TH|2TH|1TI|2TI|TIT|PHM|HEB|JAS|1PE|2PE|1JN|2JN|3JN|JUD|REV)(\d{2})\.htm",
+                      f,
+                      re.I
+                  )
+
+                  if m:
+                      rel = os.path.relpath(
+                          os.path.join(root, f),
+                          "site"
+                      ).replace(os.sep, "/")
+
+                      out[m.group(1).upper()][str(int(m.group(2)))] = rel
+
+          missing = [c for c, v in out.items() if not v]
+
+          if missing:
+              raise SystemExit(
+                  "Missing chapter files for: " + ", ".join(missing)
+              )
+
+          with open(
+              "site/bible/index.json",
+              "w",
+              encoding="utf-8"
+          ) as fp:
+              json.dump(
+                  out,
+                  fp,
+                  ensure_ascii=False,
+                  separators=(",", ":")
+              )
+
+          print(
+              "Indexed",
+              sum(len(v) for v in out.values()),
+              "chapters"
+          )
+
+      - name: Add nojekyll
+        run: touch site/.nojekyll
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
